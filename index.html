@@ -5,12 +5,17 @@
   <title>플라즈마 임피던스 시뮬레이터</title>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+  <!-- MathJax: 수식 렌더링용 -->
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+          src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <style>
     input[type=range]::-webkit-slider-thumb {
       background: #3b82f6;
     }
     input[type=range].ideal::-webkit-slider-thumb {
-      background: #10b981; /* 초록색 (이상적인 범위) */
+      background: #10b981;
     }
   </style>
 </head>
@@ -20,42 +25,30 @@
     <!-- 기초 이론 -->
     <section class="bg-white p-6 rounded shadow mb-6">
       <h1 class="text-3xl font-bold text-blue-800 mb-4">📘 플라즈마 임피던스 이론</h1>
-
       <h2 class="text-2xl font-semibold mt-4 mb-2">1. 기초 이론</h2>
-      <p class="text-sm leading-relaxed">
-        플라즈마는 전자, 이온, 중성 입자들이 섞여 있는 고온의 이온화된 기체 상태입니다. 플라즈마는 전자기장에 민감하게 반응하며, 이 특성 때문에 전기회로로 등가 모델링이 가능합니다. <br>
-        플라즈마 내부의 전자 및 이온의 거동은 Maxwell 방정식과 전자유체모델(2-fluid model)로 해석되며, 이를 간단화한 것이 equivalent RLC 회로 모델입니다.
-      </p>
-
+      <p class="text-sm leading-relaxed">플라즈마는 전자, 이온, 중성 입자들이 섞여 있는 고온의 이온화된 기체 상태입니다. 플라즈마는 전자기장에 민감하게 반응하며, 이 특성 때문에 전기회로로 모델링이 가능합니다.</p>
       <ul class="list-disc text-sm pl-6 mt-3">
-        <li><b>전자 밀도 (nₑ):</b> 전도 성질을 결정하는 가장 핵심 변수. 높을수록 유도 성분(L)이 작아짐.</li>
-        <li><b>Sheath:</b> 전극과 플라즈마 사이의 경계층. 축전기(C)로 모델링됨.</li>
-        <li><b>충돌률:</b> 저항(R)을 결정하며, 가스압력과 전자 온도에 의존</li>
-        <li><b>전극 면적:</b> 면적이 커질수록 C 증가, L 감소</li>
+        <li><b>전자 밀도 \( n_e \)</b>: 전도 성질을 결정하는 핵심 변수로, 높을수록 유도 성분 \( L \)이 작아짐.</li>
+        <li><b>Sheath</b>: 전극과 플라즈마 사이의 경계층. 축전기 \( C \)로 모델링됨.</li>
+        <li><b>충돌률</b>: 저항 \( R \)을 증가시키며, 가스압력과 전자 온도에 의존.</li>
+        <li><b>전극 면적</b>: 면적이 커질수록 \( C \) 증가, \( L \) 감소.</li>
       </ul>
 
       <h2 class="text-2xl font-semibold mt-6 mb-2">2. Equivalent Circuit (등가 회로)</h2>
-      <p class="text-sm">
-        플라즈마는 아래와 같은 회로로 모델링됩니다:
-        <pre class="bg-gray-100 p-2 rounded overflow-x-auto">
-Z(ω) = R + jωL - j/(ωC)</pre>
-        이때:
-        <ul class="list-disc text-sm pl-6">
-          <li>R: 충돌에 의한 에너지 손실</li>
-          <li>L: 전자 질량과 이동에 의한 자기 유도</li>
-          <li>C: sheath에 의한 축전 효과</li>
-        </ul>
-      </p>
+      <p class="text-sm">플라즈마는 아래와 같은 회로로 모델링됩니다:</p>
+      <pre class="bg-gray-100 text-sm p-2 rounded overflow-x-auto">Z(\omega) = R + j\omega L - \frac{j}{\omega C}</pre>
+      <ul class="list-disc text-sm pl-6">
+        <li>\( R \): 충돌에 의한 에너지 손실</li>
+        <li>\( L \): 전자 질량과 이동에 의한 자기 유도</li>
+        <li>\( C \): sheath에 의한 축전 효과</li>
+      </ul>
 
       <h2 class="text-2xl font-semibold mt-6 mb-2">3. 심화 공식과 물리적 유도</h2>
       <ul class="text-sm space-y-2">
-        <li><b>유도 성분 (Inductance):</b>
-          \( L_{eff} \approx \frac{m_e}{n_e e^2 A} \)</li>
-        <li><b>커패시턴스 (Capacitance):</b>
-          \( C_s = \frac{\varepsilon_0 A}{d_s} \)</li>
-        <li><b>충돌 기반 저항 근사:</b>
-          \( R \propto \frac{1}{n_e e^2 \tau} \)</li>
-        <li><b>공진 조건:</b> Im(Z) = 0일 때 \( \omega = \frac{1}{\sqrt{LC}} \)</li>
+        <li><b>유도 성분 (Inductance):</b> \( L_{eff} \approx \frac{m_e}{n_e e^2 A} \)</li>
+        <li><b>커패시턴스 (Capacitance):</b> \( C_s = \frac{\varepsilon_0 A}{d_s} \)</li>
+        <li><b>저항 (Resistance):</b> \( R \propto \frac{1}{n_e e^2 \tau} \)</li>
+        <li><b>공진 조건:</b> \( \text{Im}(Z) = 0 \Rightarrow \omega = \frac{1}{\sqrt{LC}} \)</li>
       </ul>
 
       <h2 class="text-2xl font-semibold mt-6 mb-2">4. 참고 문헌 및 자료</h2>
@@ -66,12 +59,85 @@ Z(ω) = R + jωL - j/(ωC)</pre>
       </ul>
     </section>
 
-    <!-- 이후 시뮬레이터 및 분석 섹션 유지 -->
-    <!-- 추후 이론 아래에 슬라이더 + 시뮬레이터 + 해석 순서 유지됨 -->
+    <!-- 시뮬레이터 삽입될 자리 -->
+    <section id="simulator" class="bg-white p-6 rounded shadow mb-6">
+      <h2 class="text-2xl font-bold text-blue-800 mb-4">⚙️ 플라즈마 임피던스 시뮬레이터</h2>
+      <p class="text-sm text-gray-600 mb-4">슬라이더를 조절해 플라즈마 상태를 설정하고 임피던스 변화를 확인하세요. 이상적인 범위는 초록색 슬라이더로 표시됩니다.</p>
 
-    <!-- 시뮬레이터 슬라이더에서 이상적인 값에 색상 강조 추가 -->
-    <!-- 각 슬라이더에 class="ideal" 설정하여 초록색 강조 -->
-    <!-- 해석 자동화, 공진 분석, 시각화, RLC 변환 모두 포함 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div>
+          <label class="text-sm font-medium">전자 밀도 \(n_e\) [m<sup>-3</sup>]</label>
+          <input id="ne" type="range" min="1e16" max="1e19" step="1e16" value="1e18" class="w-full ideal">
+          <p class="text-xs">\(10^{16} ~ 10^{19}\)</p>
+        </div>
+        <div>
+          <label class="text-sm font-medium">Sheath 두께 \(d_s\) [m]</label>
+          <input id="ds" type="range" min="1e-4" max="5e-3" step="1e-4" value="1e-3" class="w-full ideal">
+          <p class="text-xs">\(10^{-4} ~ 5\times10^{-3}\)</p>
+        </div>
+        <div>
+          <label class="text-sm font-medium">전극 면적 \(A\) [m<sup>2</sup>]</label>
+          <input id="area" type="range" min="0.001" max="0.1" step="0.001" value="0.01" class="w-full ideal">
+          <p class="text-xs">\(10^{-3} ~ 10^{-1}\)</p>
+        </div>
+      </div>
+
+      <div class="text-sm bg-gray-100 p-4 rounded mb-4">
+        <p><b>계산된 회로 요소:</b></p>
+        <p>\(R = \)<span id="r_val">-</span> \(\Omega\), \(L = \)<span id="l_val">-</span> H, \(C = \)<span id="c_val">-</span> F</p>
+      </div>
+
+      <div id="plot" class="w-full h-96"></div>
+
+      <div class="mt-4 p-4 bg-blue-50 text-blue-800 text-sm rounded">
+        <b>해석 Tip:</b> 고전자 밀도에서는 L이 작아지며 고주파 공진이 쉬워집니다. Sheath가 얇을수록 C는 커지고, 공진 주파수가 낮아집니다.
+      </div>
+    </section>
+
+  </div>
+  <script>
+    const e = 1.6e-19, eps0 = 8.854e-12, me = 9.1e-31, tau = 1e-6;
+    const sliders = ['ne', 'ds', 'area'];
+    sliders.forEach(id => document.getElementById(id).addEventListener('input', update));
+
+    function update() {
+      const ne = parseFloat(document.getElementById('ne').value);
+      const ds = parseFloat(document.getElementById('ds').value);
+      const A = parseFloat(document.getElementById('area').value);
+
+      const R = 1 / (ne * e * e * tau);
+      const L = me / (ne * e * e * A);
+      const C = eps0 * A / ds;
+
+      document.getElementById('r_val').innerText = R.toExponential(2);
+      document.getElementById('l_val').innerText = L.toExponential(2);
+      document.getElementById('c_val').innerText = C.toExponential(2);
+
+      const f = [], Zmag = [], Zre = [], Zim = [];
+      for (let i = 1e6; i <= 10e6; i += 1e5) {
+        const w = 2 * Math.PI * i;
+        const re = R;
+        const im = w * L - 1 / (w * C);
+        f.push(i / 1e6);
+        Zre.push(re);
+        Zim.push(im);
+        Zmag.push(Math.sqrt(re * re + im * im));
+      }
+      Plotly.newPlot('plot', [
+        {x: f, y: Zmag, name: '|Z|', mode: 'lines'},
+        {x: f, y: Zre, name: 'Re(Z)', mode: 'lines'},
+        {x: f, y: Zim, name: 'Im(Z)', mode: 'lines'}
+      ], {
+        margin: {t: 20},
+        xaxis: {title: '주파수 (MHz)'},
+        yaxis: {title: '임피던스 (Ω)'}
+      });
+    }
+    update();
+  </script>
+</body>
+</html>
+
 
 
 
