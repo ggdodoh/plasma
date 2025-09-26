@@ -7,7 +7,7 @@
   <style>
     :root{
       --bg:#0b0f14; --panel:#121826; --ink:#e6eefc; --muted:#90a4b8; --accent:#4da3ff; --accent2:#6cf3c5;
-      --danger:#ff6b6b; --grid:#1f2a44; --card:#0f1522;
+      --danger:#ff6b6b; --grid:#1f2a44; --card:#0f1522; --ok:#2ecc71; --mask: rgba(108, 243, 197, 0.18);
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -15,7 +15,7 @@
     header{padding:18px 22px;border-bottom:1px solid #162033;background:rgba(10,14,22,.6);backdrop-filter:saturate(140%) blur(6px);position:sticky;top:0;z-index:4}
     header h1{margin:0;font-weight:700;font-size:18px;letter-spacing:.2px}
     header .sub{color:var(--muted);font-size:12px}
-    .wrap{display:grid;grid-template-columns: 320px 1fr; gap:16px; padding:16px; max-width:1400px; margin:0 auto}
+    .wrap{display:grid;grid-template-columns: 330px 1fr; gap:16px; padding:16px; max-width:1500px; margin:0 auto}
     .panel{background:var(--panel); border:1px solid #1a2537; border-radius:16px; padding:16px; box-shadow:0 8px 28px rgba(0,0,0,.35)}
     .panel h2{margin:.2rem 0 .8rem; font-size:14px; color:var(--muted); font-weight:600}
     .grid{display:grid; gap:12px}
@@ -25,21 +25,23 @@
     .slider{appearance:none; width:100%; height:6px; border-radius:999px; background:#1b2740; outline:none}
     .slider::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); box-shadow:0 0 0 3px rgba(77,163,255,.18)}
     .select{width:100%; padding:8px 10px; border-radius:10px; border:1px solid #26324a; background:#0e1422; color:var(--ink)}
-    .cards{display:grid; grid-template-columns: repeat(2, minmax(280px,1fr)); gap:12px}
+    .cards{display:grid; grid-template-columns: repeat(2, minmax(300px,1fr)); gap:12px}
     .card{background:var(--card); border:1px solid #18223a; border-radius:16px; padding:12px 12px 10px}
-    .kpi{display:grid; grid-template-columns: repeat(4, minmax(120px,1fr)); gap:8px; margin-top:10px}
+    .kpi{display:grid; grid-template-columns: repeat(5, minmax(140px,1fr)); gap:8px; margin-top:10px}
     .kpi .it{background:#0e1422; border:1px solid #1a2540; padding:10px; border-radius:12px}
     .kpi .lab{color:var(--muted); font-size:11px}
     .kpi .val{font-size:16px; font-weight:700}
     canvas{width:100%; height:100%}
     .hint{color:#8db3ff; font-size:12px; margin-top:6px}
     .footer{color:#678; font-size:11px; text-align:center; padding:14px}
+    .legend{font-size:11px; color:#c7d5ea}
+    .badge{display:inline-block; padding:2px 6px; border-radius:8px; background:#0f1a2c; border:1px solid #1e2c4a; margin-left:6px}
   </style>
 </head>
 <body>
 <header>
   <h1>Plasma Impedance → RF Reflection (13.56 MHz 스터디용)</h1>
-  <div class="sub">CCP: Z = R + 1/(jωC), ICP: Z = (R ∥ jωL). 슬라이더 조절로 Γ, Pr, RL, VSWR 실시간 확인.</div>
+  <div class="sub">CCP: Z = R + 1/(jωC), ICP: Z = (R ∥ jωL). 슬라이더 조절로 Γ, Pr, RL, VSWR 실시간 확인. <span class="badge">이상영역 가이드: RL ≥ 20 dB (|Γ| ≤ 0.1)</span></div>
 </header>
 
 <div class="wrap">
@@ -72,7 +74,14 @@
         <div class="row"><label>L (µH)</label><output id="o_l">2.00</output></div>
         <input id="l" type="range" class="slider" min="0.05" max="20" step="0.05" value="2"/>
       </div>
-      <div class="hint">Tip: Z<sub>0</sub>에 맞추면 |Γ|→0, P<sub>r</sub>→0W. CCP는 C<sub>s</sub> 증가가 커패시턴스 성분을 키움.</div>
+
+      <h2>Frequency Sweep</h2>
+      <div class="row"><label>Sweep span ± (%)</label><output id="o_span">20</output></div>
+      <input id="span" type="range" class="slider" min="1" max="100" step="1" value="20"/>
+      <div class="row"><label>Points</label><output id="o_pts">200</output></div>
+      <input id="pts" type="range" class="slider" min="50" max="1000" step="10" value="200"/>
+
+      <div class="hint">Guide: RL ≥ 20 dB (|Γ| ≤ 0.1, VSWR ≤ 1.22) 영역을 그래프에 표시.</div>
     </div>
   </aside>
 
@@ -81,43 +90,52 @@
     <section class="kpi" id="kpi">
       <div class="it"><div class="lab">Z<sub>load</sub> (Ω)</div><div class="val" id="k_z"></div></div>
       <div class="it"><div class="lab">|Γ| (∠deg)</div><div class="val" id="k_g"></div></div>
-      <div class="it"><div class="lab">Reflected Power P<sub>r</sub> (W)</div><div class="val" id="k_pr"></div></div>
-      <div class="it"><div class="lab">RL (dB) | VSWR</div><div class="val" id="k_rl"></div></div>
+      <div class="it"><div class="lab">P<sub>r</sub> (W)</div><div class="val" id="k_pr"></div></div>
+      <div class="it"><div class="lab">RL (dB)</div><div class="val" id="k_rl"></div></div>
+      <div class="it"><div class="lab">VSWR</div><div class="val" id="k_vswr"></div></div>
     </section>
 
     <div class="cards" style="margin-top:10px">
       <div class="card">
-        <div class="lab">Forward vs Reflected Power</div>
-        <canvas id="bar" width="600" height="280"></canvas>
+        <div class="lab">Forward vs Reflected Power (값 라벨 포함)</div>
+        <canvas id="bar" width="680" height="300"></canvas>
       </div>
       <div class="card">
-        <div class="lab">Smith Chart (Γ-plane)</div>
-        <canvas id="smith" width="600" height="420"></canvas>
+        <div class="lab">Smith Chart (Γ-plane) — 이상영역(|Γ|≤0.1) 가이드 링</div>
+        <canvas id="smith" width="680" height="440"></canvas>
       </div>
       <div class="card" style="grid-column:1 / -1;">
-        <div class="lab">Local Sensitivity Map (around current sliders)</div>
-        <canvas id="heat" width="1200" height="360"></canvas>
+        <div class="lab">Local Sensitivity Map — 색상: P<sub>r</sub>(W), 등고선·가이드(RL≥20 dB) 포함</div>
+        <canvas id="heat" width="1400" height="380"></canvas>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div class="card" style="grid-column:1 / -1;">
+        <div class="lab">Frequency Sweep — P<sub>r</sub>(f). 녹색 음영: RL≥20 dB 영역, 점선: 현재 f</div>
+        <canvas id="sweep" width="1400" height="320"></canvas>
       </div>
     </div>
   </main>
 </div>
 
-<div class="footer">© plasma study tool — CCP/ICP 등가모델 기반. 교육용. </div>
+<div class="footer">© plasma study tool — CCP/ICP 등가모델 기반. 교육용. 이상영역 임계: RL≥20 dB.</div>
 
 <script>
   const $ = sel => document.querySelector(sel);
-  const fEl = $('#f'), z0El = $('#z0'), pfEl = $('#pf');
-  const o_f = $('#o_f'), o_z0 = $('#o_z0'), o_pf = $('#o_pf');
-  const topo = $('#topo');
-  const ccpBlock = $('#ccpBlock'), icpBlock = $('#icpBlock');
-  const rb = $('#rb'), cs = $('#cs'), o_rb = $('#o_rb'), o_cs = $('#o_cs');
-  const rb2 = $('#rb2'), l = $('#l'), o_rb2 = $('#o_rb2'), o_l = $('#o_l');
+  const fEl=$('#f'), z0El=$('#z0'), pfEl=$('#pf');
+  const o_f=$('#o_f'), o_z0=$('#o_z0'), o_pf=$('#o_pf');
+  const topo=$('#topo');
+  const ccpBlock=$('#ccpBlock'), icpBlock=$('#icpBlock');
+  const rb=$('#rb'), cs=$('#cs'), o_rb=$('#o_rb'), o_cs=$('#o_cs');
+  const rb2=$('#rb2'), l=$('#l'), o_rb2=$('#o_rb2'), o_l=$('#o_l');
+  const spanEl=$('#span'), ptsEl=$('#pts'), o_span=$('#o_span'), o_pts=$('#o_pts');
 
-  const kZ = $('#k_z'), kG = $('#k_g'), kPR = $('#k_pr'), kRL = $('#k_rl');
-  const barCv = $('#bar'), smithCv = $('#smith'), heatCv = $('#heat');
-  const barCtx = barCv.getContext('2d');
-  const smithCtx = smithCv.getContext('2d');
-  const heatCtx = heatCv.getContext('2d');
+  const kZ=$('#k_z'), kG=$('#k_g'), kPR=$('#k_pr'), kRL=$('#k_rl'), kVSWR=$('#k_vswr');
+  const barCv=$('#bar'), smithCv=$('#smith'), heatCv=$('#heat'), sweepCv=$('#sweep');
+  const barCtx=barCv.getContext('2d');
+  const smithCtx=smithCv.getContext('2d');
+  const heatCtx=heatCv.getContext('2d');
+  const sweepCtx=sweepCv.getContext('2d');
+  const legend=$('#legend');
 
   function cmplx(r,i){return {r:r,i:i}}
   function cadd(a,b){return cmplx(a.r+b.r, a.i+b.i)}
@@ -129,173 +147,207 @@
   function carg(a){return Math.atan2(a.i,a.r)}
 
   function calc(){
-    // UI state
-    const fMHz = +fEl.value; const Z0 = +z0El.value; const Pfwd = +pfEl.value;
-    o_f.textContent = fMHz.toFixed(2); o_z0.textContent = Z0.toFixed(2); o_pf.textContent = Pfwd.toFixed(0);
-    const w = 2*Math.PI*fMHz*1e6;
+    const fMHz=+fEl.value, Z0=+z0El.value, Pfwd=+pfEl.value;
+    o_f.textContent=fMHz.toFixed(2); o_z0.textContent=Z0.toFixed(2); o_pf.textContent=Pfwd.toFixed(0);
+    const w=2*Math.PI*fMHz*1e6;
 
-    const t = topo.value;
-    let ZL, params;
+    const t=topo.value; let ZL, params;
     if(t==='CCP'){
       ccpBlock.style.display='block'; icpBlock.style.display='none';
-      o_rb.textContent = (+rb.value).toFixed(1);
-      o_cs.textContent = (+cs.value).toFixed(0);
-      const Rb = +rb.value;
-      const Cs = (+cs.value)*1e-12;
-      const Zc = cmplx(0,-1/(w*Cs)); // 1/(jωC) = -j/(ωC)
-      ZL = cadd(cmplx(Rb,0), Zc);
-      params = {Rb, Cs};
+      o_rb.textContent=(+rb.value).toFixed(1); o_cs.textContent=(+cs.value).toFixed(0);
+      const Rb=+rb.value; const Cs=(+cs.value)*1e-12;
+      const Zc=cmplx(0,-1/(w*Cs)); ZL=cadd(cmplx(Rb,0),Zc); params={Rb, Cs};
     } else {
       ccpBlock.style.display='none'; icpBlock.style.display='block';
-      o_rb2.textContent = (+rb2.value).toFixed(1);
-      o_l.textContent  = (+l.value).toFixed(2);
-      const Rb = +rb2.value;
-      const L  = (+l.value)*1e-6;
-      const Zind = cmplx(0, w*L); // jωL
-      const Y = cadd(cinv(cmplx(Rb,0)), cinv(Zind));
-      ZL = cinv(Y);
-      params = {Rb, L};
+      o_rb2.textContent=(+rb2.value).toFixed(1); o_l.textContent=(+l.value).toFixed(2);
+      const Rb=+rb2.value; const L=(+l.value)*1e-6;
+      const Zind=cmplx(0,w*L); const Y=cadd(cinv(cmplx(Rb,0)), cinv(Zind)); ZL=cinv(Y); params={Rb, L};
     }
 
     // Γ, Pr, RL, VSWR
-    const Z0c = cmplx(Z0,0);
-    const Gamma = cdiv(csub(ZL,Z0c), cadd(ZL,Z0c));
-    const gmag = cabs(Gamma);
-    const Pr = gmag*gmag*Pfwd;
-    const RL = -20*Math.log10(Math.max(gmag,1e-15));
-    const VSWR = (1+gmag)/(Math.max(1-gmag,1e-15));
+    const Z0c=cmplx(Z0,0); const Gamma=cdiv(csub(ZL,Z0c), cadd(ZL,Z0c));
+    const gmag=cabs(Gamma); const Pr=gmag*gmag*Pfwd; const RL=-20*Math.log10(Math.max(gmag,1e-15));
+    const VSWR=(1+gmag)/(Math.max(1-gmag,1e-15));
 
     // KPIs
-    kZ.textContent = `${ZL.r.toFixed(3)} + j${ZL.i.toFixed(3)}`;
-    kG.textContent = `${gmag.toFixed(4)} (∠ ${ (carg(Gamma)*180/Math.PI).toFixed(1) }°)`;
-    kPR.textContent = Pr.toFixed(2);
-    kRL.textContent = `${RL.toFixed(2)} | ${VSWR.toFixed(3)}`;
+    kZ.textContent=`${ZL.r.toFixed(3)} + j${ZL.i.toFixed(3)}`;
+    kG.textContent=`${gmag.toFixed(4)} (∠ ${(carg(Gamma)*180/Math.PI).toFixed(1)}°)`;
+    kPR.textContent=Pr.toFixed(2); kRL.textContent=RL.toFixed(2); kVSWR.textContent=VSWR.toFixed(3);
 
-    drawBar(Pfwd, Pr);
+    drawBar(Pfwd,Pr);
     drawSmith(Gamma);
-    drawHeat(t, w, Z0, Pfwd, params);
+    drawHeat(t,w,Z0,Pfwd,params);
+    drawSweep(t,fMHz,spanEl.value|0,ptsEl.value|0,Z0,Pfwd,params);
+
+    o_span.textContent=spanEl.value; o_pts.textContent=ptsEl.value;
   }
 
-  function drawBar(Pfwd, Pr){
-    const ctx = barCtx; const W = barCv.width, H = barCv.height;
-    ctx.clearRect(0,0,W,H);
-    const max = Math.max(Pfwd, Pr, 1);
-    const m = 30, bw = (W-4*m)/2;
-    ctx.fillStyle = '#1b2740'; ctx.fillRect(0,0,W,H);
-    // axes
-    ctx.strokeStyle = '#2a3a60'; ctx.lineWidth=1; ctx.beginPath();
-    for(let i=0;i<=5;i++){const y=H-m - (H-2*m)*i/5; ctx.moveTo(m,y); ctx.lineTo(W-m,y);} ctx.stroke();
-    const scale = (H-2*m)/max;
-    // bars
-    ctx.fillStyle = '#6cf3c5'; ctx.fillRect(m, H-m-Pr*scale, bw, Pr*scale);
-    ctx.fillStyle = '#4da3ff'; ctx.fillRect(m+bw+2*m, H-m-Pfwd*scale, bw, Pfwd*scale);
-    ctx.fillStyle = '#cbd6ea'; ctx.font='12px ui-sans-serif';
-    ctx.fillText('Reflected', m, H-m+14); ctx.fillText('Forward', m+bw+2*m, H-m+14);
+  function drawBar(Pfwd,Pr){
+    const ctx=barCtx, W=barCv.width, H=barCv.height; ctx.clearRect(0,0,W,H);
+    const max=Math.max(Pfwd,Pr,1); const m=36, bw=(W-4*m)/2, scale=(H-2*m)/max;
+    // grid
+    ctx.fillStyle='#0e1422'; ctx.fillRect(0,0,W,H); ctx.strokeStyle='#2a3a60'; ctx.lineWidth=1; ctx.beginPath();
+    for(let i=0;i<=5;i++){const y=H-m-(H-2*m)*i/5; ctx.moveTo(m,y); ctx.lineTo(W-m,y);} ctx.stroke();
+    // bars + labels
+    ctx.fillStyle='#6cf3c5'; ctx.fillRect(m, H-m-Pr*scale, bw, Pr*scale);
+    ctx.fillStyle='#4da3ff'; ctx.fillRect(m+bw+2*m, H-m-Pfwd*scale, bw, Pfwd*scale);
+    ctx.fillStyle='#cbd6ea'; ctx.font='12px ui-sans-serif';
+    ctx.fillText(`Reflected: ${Pr.toFixed(2)} W`, m, H-m-Pr*scale-6);
+    ctx.fillText(`Forward: ${Pfwd.toFixed(2)} W`, m+bw+2*m, H-m-Pfwd*scale-6);
   }
 
   function drawSmith(G){
-    const ctx = smithCtx; const W = smithCv.width, H = smithCv.height;
-    ctx.clearRect(0,0,W,H); ctx.fillStyle='#0e1422'; ctx.fillRect(0,0,W,H);
+    const ctx=smithCtx, W=smithCv.width, H=smithCv.height; ctx.clearRect(0,0,W,H);
     const cx=W/2, cy=H/2, R=Math.min(W,H)*0.42;
+    ctx.fillStyle='#0e1422'; ctx.fillRect(0,0,W,H);
     // unit circle
     ctx.strokeStyle='#31476e'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
-    // cross axes
-    ctx.beginPath(); ctx.moveTo(cx-R-8,cy); ctx.lineTo(cx+R+8,cy); ctx.moveTo(cx,cy-R-8); ctx.lineTo(cx,cy+R+8); ctx.stroke();
-    // point
-    const x = cx + R * G.r; const y = cy - R * G.i;
-    ctx.fillStyle = '#ffcf66'; ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fill();
+    // ideal region ring |Γ|=0.1
+    ctx.strokeStyle='#2ecc71'; ctx.setLineDash([6,6]); ctx.beginPath(); ctx.arc(cx,cy,R*0.1,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+    // axes
+    ctx.beginPath(); ctx.moveTo(cx-R-8,cy); ctx.lineTo(cx+R+8,cy); ctx.moveTo(cx,cy-R-8); ctx.lineTo(cx,cy+R+8); ctx.strokeStyle='#31476e'; ctx.stroke();
+    // point + numeric label
+    const x=cx + R*G.r, y=cy - R*G.i; ctx.fillStyle='#ffcf66'; ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#cbd6ea'; ctx.font='12px ui-sans-serif'; ctx.fillText(`|Γ|=${(Math.hypot(G.r,G.i)).toFixed(3)}`, x+10, y-8);
   }
 
-  function drawHeat(t, w, Z0, Pfwd, params){
-    const ctx = heatCtx; const W = heatCv.width, H = heatCv.height; ctx.clearRect(0,0,W,H);
-    // grid area
-    const pad=40; const GW=W-2*pad, GH=H-2*pad; ctx.fillStyle='#0e1422'; ctx.fillRect(0,0,W,H);
-    // axis labels
+  function drawHeat(t,w,Z0,Pfwd,params){
+    const ctx=heatCtx, W=heatCv.width, H=heatCv.height; ctx.clearRect(0,0,W,H);
+    const pad=48, GW=W-2*pad, GH=H-2*pad; ctx.fillStyle='#0e1422'; ctx.fillRect(0,0,W,H);
     ctx.fillStyle='#c7d5ea'; ctx.font='12px ui-sans-serif';
-    if(t==='CCP'){ ctx.fillText('C_s (pF, log)', pad, H-10); ctx.save(); ctx.translate(12, H/2); ctx.rotate(-Math.PI/2); ctx.fillText('R_b (Ω, log)',0,0); ctx.restore(); }
-    else { ctx.fillText('L (µH, log)', pad, H-10); ctx.save(); ctx.translate(12, H/2); ctx.rotate(-Math.PI/2); ctx.fillText('R_b (Ω, log)',0,0); ctx.restore(); }
+    if(t==='CCP'){ ctx.fillText('C_s (pF, log)', pad, H-12); ctx.save(); ctx.translate(14, H/2); ctx.rotate(-Math.PI/2); ctx.fillText('R_b (Ω, log)',0,0); ctx.restore(); }
+    else { ctx.fillText('L (µH, log)', pad, H-12); ctx.save(); ctx.translate(14, H/2); ctx.rotate(-Math.PI/2); ctx.fillText('R_b (Ω, log)',0,0); ctx.restore(); }
 
-    // sweep ranges around current
-    const NX=140, NY=80; // resolution
     const img = ctx.createImageData(GW, GH);
-
-    // helpers
-    function mapColor(val, vmin, vmax){ // viridis-like simple map
-      const t = Math.min(1, Math.max(0, (val - vmin)/(vmax - vmin + 1e-12)));
-      const r = Math.floor(68 + 187*t); // 68→255
-      const g = Math.floor(1 + 180*t);  // 1→181
-      const b = Math.floor(84 + 50*t);  // 84→134
-      return [r,g,b];
-    }
-
-    // generate field of Pr
     const P = new Float32Array(GW*GH);
 
-    // set sweep bounds
+    let vmin=Infinity, vmax=-Infinity;
+    const Z0c=cmplx(Z0,0);
+
+    let Rmin,Rmax,Xmin,Xmax; // X: Cs or L
     if(t==='CCP'){
-      const R0 = params.Rb, C0 = params.Cs; // Cs in F
-      const Rmin=Math.max(0.5, R0*0.5), Rmax=R0*1.5;
-      const Cmin=Math.max(1e-12, C0*0.5), Cmax=C0*1.5;
+      const R0=params.Rb, C0=params.Cs; Rmin=Math.max(0.5, R0*0.5); Rmax=R0*1.5; Xmin=Math.max(1e-12, C0*0.5); Xmax=C0*1.5;
       for(let y=0;y<GH;y++){
-        const R = Math.exp(Math.log(Rmin) + (Math.log(Rmax/Rmin))*(1-y/(GH-1)));
+        const R=Math.exp(Math.log(Rmin)+(Math.log(Rmax/Rmin))*(1-y/(GH-1)));
         for(let x=0;x<GW;x++){
-          const C = Math.exp(Math.log(Cmin) + (Math.log(Cmax/Cmin))*(x/(GW-1)));
-          const Zc = cmplx(0, -1/(w*C));
-          const Z = cadd(cmplx(R,0), Zc);
-          const Gam = cdiv(csub(Z, cmplx(Z0,0)), cadd(Z, cmplx(Z0,0)));
-          const Pr = cabs(Gam)**2 * Pfwd;
-          P[y*GW+x] = Pr;
+          const C=Math.exp(Math.log(Xmin)+(Math.log(Xmax/Xmin))*(x/(GW-1)));
+          const Zc=cmplx(0, -1/(w*C)); const Z=cadd(cmplx(R,0), Zc);
+          const Gam=cdiv(csub(Z,Z0c), cadd(Z,Z0c)); const Pr=cabs(Gam)**2*Pfwd; const idx=y*GW+x; P[idx]=Pr; if(Pr<vmin)vmin=Pr; if(Pr>vmax)vmax=Pr;
         }
       }
     } else {
-      const R0 = params.Rb, L0 = params.L;
-      const Rmin=Math.max(0.2, R0*0.5), Rmax=R0*1.5;
-      const Lmin=Math.max(1e-8, L0*0.5), Lmax=L0*1.5;
+      const R0=params.Rb, L0=params.L; Rmin=Math.max(0.2,R0*0.5); Rmax=R0*1.5; Xmin=Math.max(1e-8,L0*0.5); Xmax=L0*1.5;
       for(let y=0;y<GH;y++){
-        const R = Math.exp(Math.log(Rmin) + (Math.log(Rmax/Rmin))*(1-y/(GH-1)));
+        const R=Math.exp(Math.log(Rmin)+(Math.log(Rmax/Rmin))*(1-y/(GH-1)));
         for(let x=0;x<GW;x++){
-          const Lx = Math.exp(Math.log(Lmin) + (Math.log(Lmax/Lmin))*(x/(GW-1)));
-          const Zind = cmplx(0, w*Lx);
-          const Y = cadd(cinv(cmplx(R,0)), cinv(Zind));
-          const Z = cinv(Y);
-          const Gam = cdiv(csub(Z, cmplx(Z0,0)), cadd(Z, cmplx(Z0,0)));
-          const Pr = cabs(Gam)**2 * Pfwd;
-          P[y*GW+x] = Pr;
+          const Lx=Math.exp(Math.log(Xmin)+(Math.log(Xmax/Xmin))*(x/(GW-1)));
+          const Zind=cmplx(0, w*Lx); const Y=cadd(cinv(cmplx(R,0)), cinv(Zind)); const Z=cinv(Y);
+          const Gam=cdiv(csub(Z,Z0c), cadd(Z,Z0c)); const Pr=cabs(Gam)**2*Pfwd; const idx=y*GW+x; P[idx]=Pr; if(Pr<vmin)vmin=Pr; if(Pr>vmax)vmax=Pr;
         }
       }
     }
 
-    // color range
-    let vmin=Infinity, vmax=-Infinity; for(const v of P){ if(v<vmin) vmin=v; if(v>vmax) vmax=v; }
+    // paint heatmap (Pr)
+    function colorMap(val){ const t=Math.min(1, Math.max(0,(val-vmin)/(vmax-vmin+1e-12))); const r=Math.floor(58+197*t); const g=Math.floor(30+190*t); const b=Math.floor(90+60*t); return [r,g,b]; }
+    let k=0; for(let y=0;y<GH;y++) for(let x=0;x<GW;x++){ const [r,g,b]=colorMap(P[y*GW+x]); img.data[k++]=r; img.data[k++]=g; img.data[k++]=b; img.data[k++]=255; }
+    ctx.putImageData(img, pad, pad);
 
-    // paint
-    let idx=0;
-    for(let y=0;y<GH;y++){
+    // RL≥20 dB mask overlay
+    const mask=ctx.createImageData(GW,GH); k=0; for(let y=0;y<GH;y++){
       for(let x=0;x<GW;x++){
-        const v = P[y*GW+x];
-        const [r,g,b] = mapColor(v, vmin, vmax);
-        img.data[idx++] = r; img.data[idx++] = g; img.data[idx++] = b; img.data[idx++] = 255;
+        // approximate RL from Pr/Pfwd: |Γ| = sqrt(Pr/Pfwd)
+        const g=Math.sqrt(Math.max(P[y*GW+x]/(pfEl.value||1),0)); const RL= -20*Math.log10(Math.max(g,1e-15));
+        const alpha = RL>=20 ? 60 : 0; // 0..255
+        mask.data[k++]=108; mask.data[k++]=243; mask.data[k++]=197; mask.data[k++]=alpha; // mint overlay
       }
     }
-    heatCtx.putImageData(img, pad, pad);
+    ctx.putImageData(mask, pad, pad);
 
     // border
-    ctx.strokeStyle = '#223250'; ctx.strokeRect(pad, pad, GW, GH);
+    ctx.strokeStyle='#223250'; ctx.strokeRect(pad, pad, GW, GH);
+
+    // simple contours (3 levels)
+    ctx.strokeStyle='#e8eefc88';
+    for(const frac of [0.2,0.5,0.8]){
+      const thr=vmin + (vmax-vmin)*frac; ctx.beginPath();
+      // marching squares (very lightweight approx)
+      for(let x=0;x<GW;x++){
+        for(let y=0;y<GH;y++){
+          const v=P[y*GW+x]; if(Math.abs(v-thr)/(vmax-vmin) < 0.002){ ctx.rect(pad+x, pad+y, 1, 1); }
+        }
+      }
+      ctx.stroke();
+    }
+
+    // axis ticks + legend
+    ctx.fillStyle='#cbd6ea'; ctx.font='11px ui-sans-serif';
+    const lbl1 = t==='CCP' ? `${(Xmin*1e12).toPrecision(3)} pF` : `${(Xmin*1e6).toPrecision(3)} µH`;
+    const lbl2 = t==='CCP' ? `${(Xmax*1e12).toPrecision(3)} pF` : `${(Xmax*1e6).toPrecision(3)} µH`;
+    ctx.fillText(lbl1, pad, H-24); ctx.fillText(lbl2, W-pad-80, H-24);
+    ctx.fillText(`${Rmax.toPrecision(3)} Ω`, pad+6, pad+12); ctx.fillText(`${Rmin.toPrecision(3)} Ω`, pad+6, H-pad);
+
+    legend.innerHTML = `색상 = P<sub>r</sub>(W) · min=${vmin.toFixed(2)} · max=${vmax.toFixed(2)}  — 연녹색 음영: RL≥20 dB`;
   }
 
-  // bind events
+  function drawSweep(t, f0MHz, spanPct, pts, Z0, Pfwd, params){
+    const ctx=sweepCtx, W=sweepCv.width, H=sweepCv.height; ctx.clearRect(0,0,W,H);
+    const fmin=f0MHz*(1-spanPct/100), fmax=f0MHz*(1+spanPct/100);
+    const xs=new Float64Array(pts), ys=new Float64Array(pts), rl=new Float64Array(pts);
+    for(let i=0;i<pts;i++){
+      const fMHz=fmin + (fmax-fmin)*i/(pts-1); const w=2*Math.PI*fMHz*1e6; let Z;
+      if(t==='CCP'){
+        const Zc=cmplx(0, -1/(w*params.Cs)); Z=cadd(cmplx(params.Rb,0), Zc);
+      } else {
+        const Zind=cmplx(0, w*params.L); const Y=cadd(cinv(cmplx(params.Rb,0)), cinv(Zind)); Z=cinv(Y);
+      }
+      const Gam=cdiv(csub(Z,cmplx(Z0,0)), cadd(Z,cmplx(Z0,0))); const g=cabs(Gam); ys[i]=g*g*Pfwd; xs[i]=fMHz; rl[i]=-20*Math.log10(Math.max(g,1e-15));
+    }
+
+    const m=40; const xmin=fmin, xmax=fmax; const ymin=0, ymax=Math.max(...ys,1);
+    function X(f){return m + (W-2*m)*(f-xmin)/(xmax-xmin)}
+    function Y(v){return H-m - (H-2*m)*(v-ymin)/(ymax-ymin)}
+
+    // background
+    ctx.fillStyle='#0e1422'; ctx.fillRect(0,0,W,H);
+
+    // RL>=20 dB shading using rl array
+    ctx.fillStyle='rgba(46,204,113,0.18)'; ctx.beginPath();
+    let drawing=false; for(let i=0;i<pts;i++){ if(rl[i]>=20){ const x=X(xs[i]); if(!drawing){ctx.moveTo(x, m); drawing=true;} ctx.lineTo(x, H-m);} else if(drawing){ ctx.lineTo(X(xs[i-1]), m); drawing=false; }
+    }
+    if(drawing){ ctx.lineTo(X(xs[pts-1]), m); }
+    ctx.closePath(); ctx.fill();
+
+    // axes & grid
+    ctx.strokeStyle='#2a3a60'; ctx.lineWidth=1; ctx.beginPath();
+    for(let i=0;i<=5;i++){ const y=Y(ymin + (ymax-ymin)*i/5); ctx.moveTo(m,y); ctx.lineTo(W-m,y);} ctx.stroke();
+    ctx.strokeStyle='#2a3a60'; ctx.beginPath(); for(let i=0;i<=10;i++){ const x=m + (W-2*m)*i/10; ctx.moveTo(x,m); ctx.lineTo(x,H-m);} ctx.stroke();
+
+    // curve
+    ctx.strokeStyle='#4da3ff'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(X(xs[0]), Y(ys[0]));
+    for(let i=1;i<pts;i++){ ctx.lineTo(X(xs[i]), Y(ys[i])); } ctx.stroke();
+
+    // current f marker
+    const xc=X(f0MHz); ctx.setLineDash([6,6]); ctx.strokeStyle='#cbd6ea'; ctx.beginPath(); ctx.moveTo(xc,m); ctx.lineTo(xc,H-m); ctx.stroke(); ctx.setLineDash([]);
+
+    // labels
+    ctx.fillStyle='#cbd6ea'; ctx.font='12px ui-sans-serif';
+    ctx.fillText(`f: ${fmin.toFixed(3)}–${fmax.toFixed(3)} MHz`, m, H-8);
+    ctx.fillText(`P_r max=${ymax.toFixed(2)} W`, W-200, m-8);
+
+    // find min Pr in sweep
+    let imin=0; for(let i=1;i<pts;i++){ if(ys[i]<ys[imin]) imin=i; }
+    ctx.fillStyle='#ffcf66'; ctx.beginPath(); ctx.arc(X(xs[imin]), Y(ys[imin]), 4, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle='#cbd6ea'; ctx.fillText(`min ${ys[imin].toFixed(2)} W @ ${xs[imin].toFixed(3)} MHz (RL=${rl[imin].toFixed(1)} dB)`, X(xs[imin])+8, Y(ys[imin])-8);
+  }
+
   ;['input','change'].forEach(ev=>{
-    [fEl,z0El,pfEl,rb,cs,rb2,l,topo].forEach(el=> el.addEventListener(ev, calc));
+    [fEl,z0El,pfEl,rb,cs,rb2,l,topo,spanEl,ptsEl].forEach(el=> el.addEventListener(ev, calc));
   });
 
-  // first draw
+  // init
   calc();
 </script>
 </body>
 </html>
-
-
-
-
 
 
