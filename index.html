@@ -10,58 +10,36 @@
   <div class="max-w-5xl mx-auto">
     <!-- 헤더 -->
     <header class="mb-6">
-      <h1 class="text-3xl font-bold text-blue-800 mb-2">🔬 플라즈마 임피던스 시뮬레이터 (R, L, C 기반)</h1>
-      <p class="text-sm text-gray-600">이 시뮬레이터는 플라즈마의 전기적 임피던스를 R(저항), L(인덕턴스), C(커패시턴스) 요소를 통해 이해할 수 있도록 도와줍니다.</p>
+      <h1 class="text-3xl font-bold text-blue-800 mb-2">🔬 플라즈마 임피던스 시뮬레이터 (밀도 기반 자동 계산)</h1>
+      <p class="text-sm text-gray-600">이 시뮬레이터는 플라즈마의 전자 밀도, 이온 밀도, sheath 두께 등의 물리량을 기반으로 자동으로 R, L, C 값을 계산하고 임피던스 특성을 시각화합니다.</p>
     </header>
 
-    <!-- 상세 이론 설명 -->
+    <!-- 입력 슬라이더 -->
     <section class="bg-white p-4 rounded shadow mb-6">
-      <h2 class="text-xl font-semibold mb-4">📚 플라즈마 임피던스 이론 요약</h2>
-      <p class="mb-2">플라즈마는 고온의 기체 상태에서 전자와 이온으로 분리된 이온화된 물질입니다. 전기적인 특성 때문에 회로 이론에서 RLC 회로로 모델링할 수 있습니다.</p>
-      <div class="space-y-3 text-sm">
+      <h2 class="text-xl font-semibold mb-4">⚙️ 물리 파라미터 입력</h2>
+      <div class="space-y-4 text-sm">
         <div>
-          <h3 class="font-semibold">1. Equivalent Circuit</h3>
-          <p>플라즈마는 Bulk 영역(R, L)과 Sheath 영역(C)으로 나뉘며 전체는 다음과 같은 회로로 모델링됩니다:</p>
-          <pre class="bg-gray-100 p-2 rounded overflow-x-auto">
-Z(ω) = R + jωL - j/(ωC)</pre>
+          <label class="block font-medium">전자 밀도 (nₑ, /m³): <span id="neVal" class="font-bold text-blue-700"></span></label>
+          <input type="range" id="ne" min="1e15" max="1e19" step="1e16" value="1e17" class="w-full">
         </div>
         <div>
-          <h3 class="font-semibold">2. 유도 성분 (Inductance)</h3>
-          <p>전자 질량에 따라 응답 속도가 제한되며, 이는 유도 성분으로 모델링됩니다. 다음과 같이 근사됩니다:</p>
-          <pre class="bg-gray-100 p-2 rounded overflow-x-auto">
-L_eff ≈ m_e / (n_e * e^2 * A)</pre>
+          <label class="block font-medium">sheath 두께 (d, m): <span id="dVal" class="font-bold text-blue-700"></span></label>
+          <input type="range" id="d" min="1e-4" max="5e-3" step="1e-4" value="1e-3" class="w-full">
         </div>
         <div>
-          <h3 class="font-semibold">3. 커패시턴스 성분 (Capacitance)</h3>
-          <p>전극 주변 sheath 영역은 축전기처럼 동작하며 다음과 같이 표현됩니다:</p>
-          <pre class="bg-gray-100 p-2 rounded overflow-x-auto">
-C_s = ε₀ * A / d</pre>
+          <label class="block font-medium">전극 면적 (A, m²): <span id="aVal" class="font-bold text-blue-700"></span></label>
+          <input type="range" id="a" min="0.001" max="0.1" step="0.001" value="0.01" class="w-full">
         </div>
         <div>
-          <h3 class="font-semibold">4. 임피던스 전체 모델</h3>
-          <p>위 요소들을 종합하면, 플라즈마의 주파수 응답은 다음과 같이 나타납니다:</p>
-          <pre class="bg-gray-100 p-2 rounded overflow-x-auto">
-Z_total(ω) = R + jωL - j/(ωC)</pre>
-        </div>
-        <div>
-          <h3 class="font-semibold">참고 문헌</h3>
-          <ul class="list-disc pl-5 text-blue-700">
-            <li><a href="https://www.wiley.com/en-us/Principles+of+Plasma+Discharges+and+Materials+Processing%2C+2nd+Edition-p-9780471720010" target="_blank">Lieberman & Lichtenberg, Principles of Plasma Discharges</a></li>
-            <li><a href="https://www.springer.com/gp/book/9783319223092" target="_blank">Chen, Introduction to Plasma Physics</a></li>
-          </ul>
+          <button onclick="convertAndSimulate()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">시뮬레이션</button>
         </div>
       </div>
     </section>
 
-    <!-- 입력 폼 -->
+    <!-- 회로 파라미터 자동 계산 결과 -->
     <section class="bg-white p-4 rounded shadow mb-6">
-      <h2 class="text-xl font-semibold mb-2">⚙️ 시뮬레이션 파라미터 입력</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <label>저항 R (Ω): <input id="res" type="number" value="5" class="border p-1 w-full"></label>
-        <label>인덕턴스 L (H): <input id="ind" type="number" value="1e-6" class="border p-1 w-full"></label>
-        <label>커패시턴스 C (F): <input id="cap" type="number" value="1e-9" class="border p-1 w-full"></label>
-      </div>
-      <button onclick="plotImpedance()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">시뮬레이션</button>
+      <h2 class="text-xl font-semibold mb-2">🔧 회로 요소 자동 계산 (R, L, C)</h2>
+      <div class="text-sm text-gray-700" id="rlc-values"></div>
     </section>
 
     <!-- 그래프 -->
@@ -79,10 +57,25 @@ Z_total(ω) = R + jωL - j/(ωC)</pre>
       </div>
     </section>
 
-    <!-- 다운로드 -->
+    <!-- 시뮬레이터 해석 팁 -->
     <section class="bg-white p-4 rounded shadow mb-6">
-      <h2 class="text-xl font-semibold mb-2">📥 시뮬레이션 결과 다운로드</h2>
-      <button onclick="downloadAsImage()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">그래프 PNG 저장</button>
+      <h2 class="text-xl font-semibold mb-2">💡 시뮬레이터 해석 팁</h2>
+      <ul class="list-disc pl-5 text-sm">
+        <li>그래프가 sharp하게 떨어지는 경우 → 공진이 뚜렷 → L, C 차이가 큼</li>
+        <li>그래프가 평탄한 경우 → 저항 성분이 지배적 → R이 크거나 공진 없음</li>
+        <li>공진점이 왼쪽(저주파) → C 작거나 L 큼 (저밀도 플라즈마)</li>
+        <li>공진점이 오른쪽(고주파) → C 큼 또는 L 작음 (고밀도 플라즈마)</li>
+      </ul>
+    </section>
+
+    <!-- 예시 시나리오 -->
+    <section class="bg-white p-4 rounded shadow mb-6">
+      <h2 class="text-xl font-semibold mb-2">🧪 예시: 인자별 플라즈마 반응</h2>
+      <ul class="list-disc pl-5 text-sm space-y-2">
+        <li><b>전자 밀도가 매우 높다:</b> L 감소 → 공진점이 고주파 쪽으로 이동</li>
+        <li><b>Sheath 두께가 커짐:</b> C 감소 → 공진점이 저주파 쪽으로 이동</li>
+        <li><b>충돌률이 증가:</b> R 증가 → 공진이 흐려짐, 전체 임피던스 상승</li>
+      </ul>
     </section>
 
     <!-- 풋터 -->
@@ -92,11 +85,32 @@ Z_total(ω) = R + jωL - j/(ωC)</pre>
   </div>
 
   <script>
-    function plotImpedance() {
-      const R = parseFloat(document.getElementById("res").value);
-      const L = parseFloat(document.getElementById("ind").value);
-      const C = parseFloat(document.getElementById("cap").value);
+    const e = 1.6e-19;
+    const me = 9.1e-31;
+    const eps0 = 8.85e-12;
 
+    function convertAndSimulate() {
+      const ne = parseFloat(document.getElementById("ne").value);
+      const d = parseFloat(document.getElementById("d").value);
+      const A = parseFloat(document.getElementById("a").value);
+
+      const L = me / (ne * e * e * A);         // H
+      const C = eps0 * A / d;                  // F
+      const R = 1 / (ne * e * e * 1e-3);       // 단순 저항 근사 (임의 모델)
+
+      document.getElementById("rlc-values").innerHTML = `
+        <p><b>전자 밀도:</b> ${ne.toExponential()} /m³</p>
+        <p><b>Sheath 두께:</b> ${d} m</p>
+        <p><b>전극 면적:</b> ${A} m²</p>
+        <p><b>계산된 L:</b> ${L.toExponential(3)} H</p>
+        <p><b>계산된 C:</b> ${C.toExponential(3)} F</p>
+        <p><b>계산된 R:</b> ${R.toExponential(3)} Ω</p>
+      `;
+
+      simulateImpedance(R, L, C, ne);
+    }
+
+    function simulateImpedance(R, L, C, ne) {
       let freq = [], Zmag = [], Zre = [], Zim = [];
       let resonanceFreq = null;
       let minImZ = Infinity, minFreq = null;
@@ -124,40 +138,51 @@ Z_total(ω) = R + jωL - j/(ωC)</pre>
         }
       }
 
-      const trace1 = { x: freq, y: Zmag, mode: 'lines', name: '|Z| (임피던스 크기)' };
-      const trace2 = { x: freq, y: Zre, mode: 'lines', name: 'Re(Z)' };
-      const trace3 = { x: freq, y: Zim, mode: 'lines', name: 'Im(Z)' };
-
-      const layout = {
+      Plotly.newPlot('plot', [
+        { x: freq, y: Zmag, mode: 'lines', name: '|Z|' },
+        { x: freq, y: Zre, mode: 'lines', name: 'Re(Z)' },
+        { x: freq, y: Zim, mode: 'lines', name: 'Im(Z)' }
+      ], {
         title: '주파수(MHz) vs 임피던스',
         xaxis: { title: '주파수 (MHz)' },
         yaxis: { title: '임피던스 (Ω)' }
-      };
-
-      Plotly.newPlot('plot', [trace1, trace2, trace3], layout);
+      });
 
       const resDiv = document.getElementById("resonance-info");
       const anaDiv = document.getElementById("analysis");
 
       if (resonanceFreq) {
         resDiv.innerHTML = `📍 공진 주파수: <b>${resonanceFreq.toFixed(2)} MHz</b> (Im(Z) ≈ 0)`;
+        let densityComment = ne > 1e18 ? "고밀도 플라즈마 조건입니다." : (ne < 1e16 ? "저밀도 플라즈마입니다." : "중간 밀도입니다.");
         anaDiv.innerHTML = `
-          <p>공진점은 ${resonanceFreq.toFixed(2)} MHz 부근으로, 이때 리액턴스 성분 Im(Z)가 0에 가까워지고 전체 임피던스는 거의 저항값 R과 같아집니다.</p>
-          <p>이는 플라즈마 회로가 최대 에너지 전달 조건 (resonance)에 도달했음을 의미합니다.</p>
-          <p>해당 주파수에서는 전력 손실 없이 에너지가 전달되기 쉬우므로, 실험 설계 시 중요한 기준점입니다.</p>
+          <p>${densityComment}</p>
+          <p>공진점은 ${resonanceFreq.toFixed(2)} MHz 부근이며, 이때 Im(Z)가 0에 근접하고 임피던스는 실수값 R로 수렴합니다.</p>
+          <p>최대 에너지 전달이 가능하며 실험 설계에서 매우 중요한 기준점입니다.</p>
         `;
       } else {
-        resDiv.innerHTML = `⚠️ 그래프 범위 내에서 공진점(Im(Z)=0)을 찾을 수 없습니다.`;
-        anaDiv.innerHTML = `<p>주파수 범위를 확장하거나 L, C 값을 조정해 공진 조건을 찾을 수 있습니다.</p>`;
+        resDiv.innerHTML = `⚠️ 공진점(Im(Z)=0)을 찾을 수 없습니다.`;
+        anaDiv.innerHTML = `<p>공진 조건이 형성되지 않았습니다. 밀도, 면적, sheath 조건을 변경해 보세요.</p>`;
       }
     }
 
-    function downloadAsImage() {
-      Plotly.downloadImage(document.getElementById('plot'), {format: 'png', filename: 'plasma_impedance_plot'});
-    }
+    document.getElementById("ne").addEventListener("input", () => {
+      document.getElementById("neVal").innerText = parseFloat(document.getElementById("ne").value).toExponential();
+    });
+    document.getElementById("d").addEventListener("input", () => {
+      document.getElementById("dVal").innerText = document.getElementById("d").value + " m";
+    });
+    document.getElementById("a").addEventListener("input", () => {
+      document.getElementById("aVal").innerText = document.getElementById("a").value + " m²";
+    });
 
-    window.onload = plotImpedance;
+    window.onload = () => {
+      document.getElementById("ne").dispatchEvent(new Event("input"));
+      document.getElementById("d").dispatchEvent(new Event("input"));
+      document.getElementById("a").dispatchEvent(new Event("input"));
+      convertAndSimulate();
+    };
   </script>
 </body>
 </html>
+
 
