@@ -1,24 +1,67 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
   <meta charset="UTF-8">
   <title>플라즈마 임피던스 시뮬레이터</title>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <style>
-    body { font-family: Arial; padding: 20px; }
-    input { margin: 5px; width: 100px; }
-  </style>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body>
-  <h2>📡 플라즈마 임피던스 시뮬레이터 (R, L, C 기반)</h2>
-  <p>주파수에 따른 |Z|, Re(Z), Im(Z) 그래프</p>
+<body class="bg-gray-50 text-gray-800 font-sans p-6">
+  <div class="max-w-5xl mx-auto">
+    <!-- 헤더 -->
+    <header class="mb-6">
+      <h1 class="text-3xl font-bold text-blue-800 mb-2">🔬 플라즈마 임피던스 시뮬레이터 (R, L, C 기반)</h1>
+      <p class="text-sm text-gray-600">이 시뮬레이터는 플라즈마의 전기적 임피던스를 R(저항), L(인덕턴스), C(커패시턴스) 요소를 통해 이해할 수 있도록 도와줍니다.</p>
+    </header>
 
-  <label>저항 R (Ω): <input type="number" id="res" value="5" /></label>
-  <label>인덕턴스 L (H): <input type="number" id="ind" value="1e-6" /></label>
-  <label>커패시턴스 C (F): <input type="number" id="cap" value="1e-9" /></label>
-  <button onclick="plotImpedance()">시뮬레이션</button>
+    <!-- 이론 설명 -->
+    <section class="bg-white p-4 rounded shadow mb-6">
+      <h2 class="text-xl font-semibold mb-2">📘 이론 요약</h2>
+      <p class="mb-2">플라즈마는 전자와 이온이 자유롭게 움직이는 이온화된 기체입니다. 전기 회로 모델로는 다음과 같이 표현됩니다:</p>
+      <pre class="bg-gray-100 p-2 rounded text-sm overflow-x-auto">
+Z(ω) = R + jωL - j/(ωC)
+      </pre>
+      <ul class="list-disc pl-5 text-sm">
+        <li><b>R (저항):</b> 전자-중성 입자 충돌 등 손실 요소</li>
+        <li><b>L (인덕턴스):</b> 전자의 관성에 의한 유도 성분</li>
+        <li><b>C (커패시턴스):</b> 전극 근처 sheath에 의한 축전 효과</li>
+      </ul>
+      <p class="text-sm mt-2">참고 문헌:</p>
+      <ul class="list-disc pl-5 text-sm text-blue-700">
+        <li><a href="https://www.wiley.com/en-us/Principles+of+Plasma+Discharges+and+Materials+Processing%2C+2nd+Edition-p-9780471720010" target="_blank">Lieberman & Lichtenberg, Principles of Plasma Discharges</a></li>
+        <li><a href="https://www.springer.com/gp/book/9783319223092" target="_blank">Chen, Introduction to Plasma Physics</a></li>
+      </ul>
+    </section>
 
-  <div id="plot" style="width:100%;height:500px;"></div>
+    <!-- 입력 폼 -->
+    <section class="bg-white p-4 rounded shadow mb-6">
+      <h2 class="text-xl font-semibold mb-2">⚙️ 시뮬레이션 파라미터 입력</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <label>저항 R (Ω): <input id="res" type="number" value="5" class="border p-1 w-full"></label>
+        <label>인덕턴스 L (H): <input id="ind" type="number" value="1e-6" class="border p-1 w-full"></label>
+        <label>커패시턴스 C (F): <input id="cap" type="number" value="1e-9" class="border p-1 w-full"></label>
+      </div>
+      <button onclick="plotImpedance()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">시뮬레이션</button>
+    </section>
+
+    <!-- 그래프 -->
+    <section class="bg-white p-4 rounded shadow mb-6">
+      <h2 class="text-xl font-semibold mb-2">📊 임피던스 그래프</h2>
+      <div id="plot" class="w-full h-96"></div>
+      <div class="mt-4 text-sm text-gray-700" id="resonance-info"></div>
+    </section>
+
+    <!-- 다운로드 -->
+    <section class="bg-white p-4 rounded shadow mb-6">
+      <h2 class="text-xl font-semibold mb-2">📥 시뮬레이션 결과 다운로드</h2>
+      <button onclick="downloadAsImage()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">그래프 PNG 저장</button>
+    </section>
+
+    <!-- 풋터 -->
+    <footer class="text-center text-sm text-gray-500 mt-10">
+      Powered by GPT &middot; HTML 기반 플라즈마 학습용 도구
+    </footer>
+  </div>
 
   <script>
     function plotImpedance() {
@@ -27,6 +70,7 @@
       const C = parseFloat(document.getElementById("cap").value);
 
       let freq = [], Zmag = [], Zre = [], Zim = [];
+      let resonanceFreq = null;
 
       for (let f = 1e5; f <= 1e7; f += 1e5) {
         const omega = 2 * Math.PI * f;
@@ -36,10 +80,14 @@
         const ImZ = XL - XC;
         const MagZ = Math.sqrt(ReZ ** 2 + ImZ ** 2);
 
-        freq.push(f / 1e6); // MHz 단위
+        freq.push(f / 1e6);
         Zmag.push(MagZ);
         Zre.push(ReZ);
         Zim.push(ImZ);
+
+        if (Math.abs(ImZ) < 5 && !resonanceFreq) {
+          resonanceFreq = f / 1e6;
+        }
       }
 
       const trace1 = { x: freq, y: Zmag, mode: 'lines', name: '|Z| (임피던스 크기)' };
@@ -53,10 +101,21 @@
       };
 
       Plotly.newPlot('plot', [trace1, trace2, trace3], layout);
+
+      const resDiv = document.getElementById("resonance-info");
+      if (resonanceFreq) {
+        resDiv.innerHTML = `📍 공진 주파수: <b>${resonanceFreq.toFixed(2)} MHz</b> (Im(Z) ≈ 0)`;
+      } else {
+        resDiv.innerHTML = `⚠️ 그래프 범위 내에서 공진점(Im(Z)=0)을 찾을 수 없습니다.`;
+      }
     }
 
-    // 페이지 로드 시 기본 실행
+    function downloadAsImage() {
+      Plotly.downloadImage(document.getElementById('plot'), {format: 'png', filename: 'plasma_impedance_plot'});
+    }
+
     window.onload = plotImpedance;
   </script>
 </body>
 </html>
+
