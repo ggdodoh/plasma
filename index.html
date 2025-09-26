@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>플라즈마 임피던스 시뮬레이터</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    input { margin: 5px; width: 100px; }
+  </style>
+</head>
+<body>
+  <h2>📡 플라즈마 임피던스 시뮬레이터 (R, L, C 기반)</h2>
+  <p>주파수에 따른 |Z|, Re(Z), Im(Z) 그래프</p>
+
+  <label>저항 R (Ω): <input type="number" id="res" value="5" /></label>
+  <label>인덕턴스 L (H): <input type="number" id="ind" value="1e-6" /></label>
+  <label>커패시턴스 C (F): <input type="number" id="cap" value="1e-9" /></label>
+  <button onclick="plotImpedance()">시뮬레이션</button>
+
+  <div id="plot" style="width:100%;height:500px;"></div>
+
+  <script>
+    function plotImpedance() {
+      const R = parseFloat(document.getElementById("res").value);
+      const L = parseFloat(document.getElementById("ind").value);
+      const C = parseFloat(document.getElementById("cap").value);
+
+      let freq = [], Zmag = [], Zre = [], Zim = [];
+
+      for (let f = 1e5; f <= 1e7; f += 1e5) {
+        const omega = 2 * Math.PI * f;
+        const XL = omega * L;
+        const XC = 1 / (omega * C);
+        const ReZ = R;
+        const ImZ = XL - XC;
+        const MagZ = Math.sqrt(ReZ ** 2 + ImZ ** 2);
+
+        freq.push(f / 1e6); // MHz 단위
+        Zmag.push(MagZ);
+        Zre.push(ReZ);
+        Zim.push(ImZ);
+      }
+
+      const trace1 = { x: freq, y: Zmag, mode: 'lines', name: '|Z| (임피던스 크기)' };
+      const trace2 = { x: freq, y: Zre, mode: 'lines', name: 'Re(Z)' };
+      const trace3 = { x: freq, y: Zim, mode: 'lines', name: 'Im(Z)' };
+
+      const layout = {
+        title: '주파수(MHz) vs 임피던스',
+        xaxis: { title: '주파수 (MHz)' },
+        yaxis: { title: '임피던스 (Ω)' }
+      };
+
+      Plotly.newPlot('plot', [trace1, trace2, trace3], layout);
+    }
+
+    // 페이지 로드 시 기본 실행
+    window.onload = plotImpedance;
+  </script>
+</body>
+</html>
