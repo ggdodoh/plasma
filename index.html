@@ -14,23 +14,43 @@
       <p class="text-sm text-gray-600">이 시뮬레이터는 플라즈마의 전기적 임피던스를 R(저항), L(인덕턴스), C(커패시턴스) 요소를 통해 이해할 수 있도록 도와줍니다.</p>
     </header>
 
-    <!-- 이론 설명 -->
+    <!-- 상세 이론 설명 -->
     <section class="bg-white p-4 rounded shadow mb-6">
-      <h2 class="text-xl font-semibold mb-2">📘 이론 요약</h2>
-      <p class="mb-2">플라즈마는 전자와 이온이 자유롭게 움직이는 이온화된 기체입니다. 전기 회로 모델로는 다음과 같이 표현됩니다:</p>
-      <pre class="bg-gray-100 p-2 rounded text-sm overflow-x-auto">
-Z(ω) = R + jωL - j/(ωC)
-      </pre>
-      <ul class="list-disc pl-5 text-sm">
-        <li><b>R (저항):</b> 전자-중성 입자 충돌 등 손실 요소</li>
-        <li><b>L (인덕턴스):</b> 전자의 관성에 의한 유도 성분</li>
-        <li><b>C (커패시턴스):</b> 전극 근처 sheath에 의한 축전 효과</li>
-      </ul>
-      <p class="text-sm mt-2">참고 문헌:</p>
-      <ul class="list-disc pl-5 text-sm text-blue-700">
-        <li><a href="https://www.wiley.com/en-us/Principles+of+Plasma+Discharges+and+Materials+Processing%2C+2nd+Edition-p-9780471720010" target="_blank">Lieberman & Lichtenberg, Principles of Plasma Discharges</a></li>
-        <li><a href="https://www.springer.com/gp/book/9783319223092" target="_blank">Chen, Introduction to Plasma Physics</a></li>
-      </ul>
+      <h2 class="text-xl font-semibold mb-4">📚 플라즈마 임피던스 이론 요약</h2>
+      <p class="mb-2">플라즈마는 고온의 기체 상태에서 전자와 이온으로 분리된 이온화된 물질입니다. 전기적인 특성 때문에 회로 이론에서 RLC 회로로 모델링할 수 있습니다.</p>
+      <div class="space-y-3 text-sm">
+        <div>
+          <h3 class="font-semibold">1. Equivalent Circuit</h3>
+          <p>플라즈마는 Bulk 영역(R, L)과 Sheath 영역(C)으로 나뉘며 전체는 다음과 같은 회로로 모델링됩니다:</p>
+          <pre class="bg-gray-100 p-2 rounded overflow-x-auto">
+Z(ω) = R + jωL - j/(ωC)</pre>
+        </div>
+        <div>
+          <h3 class="font-semibold">2. 유도 성분 (Inductance)</h3>
+          <p>전자 질량에 따라 응답 속도가 제한되며, 이는 유도 성분으로 모델링됩니다. 다음과 같이 근사됩니다:</p>
+          <pre class="bg-gray-100 p-2 rounded overflow-x-auto">
+L_eff ≈ m_e / (n_e * e^2 * A)</pre>
+        </div>
+        <div>
+          <h3 class="font-semibold">3. 커패시턴스 성분 (Capacitance)</h3>
+          <p>전극 주변 sheath 영역은 축전기처럼 동작하며 다음과 같이 표현됩니다:</p>
+          <pre class="bg-gray-100 p-2 rounded overflow-x-auto">
+C_s = ε₀ * A / d</pre>
+        </div>
+        <div>
+          <h3 class="font-semibold">4. 임피던스 전체 모델</h3>
+          <p>위 요소들을 종합하면, 플라즈마의 주파수 응답은 다음과 같이 나타납니다:</p>
+          <pre class="bg-gray-100 p-2 rounded overflow-x-auto">
+Z_total(ω) = R + jωL - j/(ωC)</pre>
+        </div>
+        <div>
+          <h3 class="font-semibold">참고 문헌</h3>
+          <ul class="list-disc pl-5 text-blue-700">
+            <li><a href="https://www.wiley.com/en-us/Principles+of+Plasma+Discharges+and+Materials+Processing%2C+2nd+Edition-p-9780471720010" target="_blank">Lieberman & Lichtenberg, Principles of Plasma Discharges</a></li>
+            <li><a href="https://www.springer.com/gp/book/9783319223092" target="_blank">Chen, Introduction to Plasma Physics</a></li>
+          </ul>
+        </div>
+      </div>
     </section>
 
     <!-- 입력 폼 -->
@@ -49,6 +69,14 @@ Z(ω) = R + jωL - j/(ωC)
       <h2 class="text-xl font-semibold mb-2">📊 임피던스 그래프</h2>
       <div id="plot" class="w-full h-96"></div>
       <div class="mt-4 text-sm text-gray-700" id="resonance-info"></div>
+    </section>
+
+    <!-- 결과 해석 -->
+    <section class="bg-white p-4 rounded shadow mb-6">
+      <h2 class="text-xl font-semibold mb-2">🧠 결과 해석</h2>
+      <div id="analysis" class="text-sm text-gray-800 space-y-2">
+        <p>시뮬레이션 결과를 바탕으로 공진 주파수 및 임피던스의 특성을 분석합니다.</p>
+      </div>
     </section>
 
     <!-- 다운로드 -->
@@ -71,6 +99,7 @@ Z(ω) = R + jωL - j/(ωC)
 
       let freq = [], Zmag = [], Zre = [], Zim = [];
       let resonanceFreq = null;
+      let minImZ = Infinity, minFreq = null;
 
       for (let f = 1e5; f <= 1e7; f += 1e5) {
         const omega = 2 * Math.PI * f;
@@ -84,6 +113,11 @@ Z(ω) = R + jωL - j/(ωC)
         Zmag.push(MagZ);
         Zre.push(ReZ);
         Zim.push(ImZ);
+
+        if (Math.abs(ImZ) < Math.abs(minImZ)) {
+          minImZ = ImZ;
+          minFreq = f / 1e6;
+        }
 
         if (Math.abs(ImZ) < 5 && !resonanceFreq) {
           resonanceFreq = f / 1e6;
@@ -103,10 +137,18 @@ Z(ω) = R + jωL - j/(ωC)
       Plotly.newPlot('plot', [trace1, trace2, trace3], layout);
 
       const resDiv = document.getElementById("resonance-info");
+      const anaDiv = document.getElementById("analysis");
+
       if (resonanceFreq) {
         resDiv.innerHTML = `📍 공진 주파수: <b>${resonanceFreq.toFixed(2)} MHz</b> (Im(Z) ≈ 0)`;
+        anaDiv.innerHTML = `
+          <p>공진점은 ${resonanceFreq.toFixed(2)} MHz 부근으로, 이때 리액턴스 성분 Im(Z)가 0에 가까워지고 전체 임피던스는 거의 저항값 R과 같아집니다.</p>
+          <p>이는 플라즈마 회로가 최대 에너지 전달 조건 (resonance)에 도달했음을 의미합니다.</p>
+          <p>해당 주파수에서는 전력 손실 없이 에너지가 전달되기 쉬우므로, 실험 설계 시 중요한 기준점입니다.</p>
+        `;
       } else {
         resDiv.innerHTML = `⚠️ 그래프 범위 내에서 공진점(Im(Z)=0)을 찾을 수 없습니다.`;
+        anaDiv.innerHTML = `<p>주파수 범위를 확장하거나 L, C 값을 조정해 공진 조건을 찾을 수 있습니다.</p>`;
       }
     }
 
